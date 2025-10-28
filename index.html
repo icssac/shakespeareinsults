@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shakespearean Insult Battle Royale</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const insults = [
+          { id: 1, text: "I am sick when I do look on thee", play: "A Midsummer Night's Dream" },
+          { id: 2, text: "Sell when you can, you are not for all markets.", play: "As You Like It" },
+          { id: 3, text: "I'll beat thee, but I would infect my hands.", play: "Timon of Athens" },
+          { id: 4, text: "More of your conversation would infect my brain.", play: "Coriolanus" },
+          { id: 5, text: "Thine face is not worth sunburning.", play: "Henry V" },
+          { id: 6, text: "Thou art as fat as butter.", play: "Henry IV Part 1" },
+          { id: 7, text: "You have such a February face, So full of frost, of storm, and cloudiness.", play: "Much Ado About Nothing" },
+          { id: 8, text: "I do wish thou were a dog, that I might love thee.", play: "Timon of Athens" },
+          { id: 9, text: "What, you egg?", play: "Macbeth" },
+          { id: 10, text: "You blocks, you stones, you worse than senseless things.", play: "Julius Caesar" },
+          { id: 11, text: "Thou lump of foul deformity!", play: "Richard III" },
+          { id: 12, text: "Thou art unfit for any place but hell.", play: "Richard III" },
+          { id: 13, text: "I'll pray a thousand prayers for thy death.", play: "Timon of Athens" },
+          { id: 14, text: "You scullion! You rampallian! You fustilarian! I'll tickle your catastrophe!", play: "Henry IV" },
+          { id: 15, text: "I do desire we may be better strangers.", play: "As You Like It" },
+          { id: 16, text: "The tartness of his face sours ripe grapes.", play: "Coriolanus" }
+        ];
+
+        const Trophy = ({ className }) => (
+          <svg className={className} fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 3h12v2h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2.764a8 8 0 0 1-14.472 0H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2V3zm0 4H4v3h2V7zm14 0h-2v3h2V7zM8 19h8v2H8v-2z"/>
+          </svg>
+        );
+
+        const Swords = ({ className }) => (
+          <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 3l-9 9m0 0l-4 4m4-4l-4-4m4 4l4 4m6-6l-9-9M3 21l9-9" />
+          </svg>
+        );
+
+        const shuffleArray = (array) => {
+          const newArray = [...array];
+          for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+          }
+          return newArray;
+        };
+
+        const InsultBracket = () => {
+          const [allMatches, setAllMatches] = useState([]);
+          const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+          const [winner, setWinner] = useState(null);
+
+          useEffect(() => {
+            initializeTournament();
+          }, []);
+
+          const initializeTournament = () => {
+            const shuffled = shuffleArray(insults);
+            const matches = [];
+            for (let i = 0; i < shuffled.length; i += 2) {
+              matches.push({
+                contestants: [shuffled[i], shuffled[i + 1]],
+                winner: null,
+                round: 1
+              });
+            }
+            setAllMatches(matches);
+            setCurrentMatchIndex(0);
+            setWinner(null);
+          };
+
+          const selectWinner = (insult) => {
+            const newMatches = [...allMatches];
+            newMatches[currentMatchIndex].winner = insult;
+
+            const currentRound = newMatches[currentMatchIndex].round;
+            const roundMatches = newMatches.filter(m => m.round === currentRound);
+            const allRoundComplete = roundMatches.every(m => m.winner !== null);
+
+            if (allRoundComplete) {
+              const winners = roundMatches.map(m => m.winner);
+              
+              if (winners.length === 1) {
+                setWinner(winners[0]);
+                setAllMatches(newMatches);
+                return;
+              }
+
+              const nextRoundMatches = [];
+              for (let i = 0; i < winners.length; i += 2) {
+                nextRoundMatches.push({
+                  contestants: [winners[i], winners[i + 1]],
+                  winner: null,
+                  round: currentRound + 1
+                });
+              }
+              
+              setAllMatches([...newMatches, ...nextRoundMatches]);
+              setCurrentMatchIndex(currentMatchIndex + 1);
+            } else {
+              setAllMatches(newMatches);
+              setCurrentMatchIndex(currentMatchIndex + 1);
+            }
+          };
+
+          const getRoundName = (round, totalMatches) => {
+            const remainingContestants = Math.pow(2, Math.ceil(Math.log2(totalMatches.filter(m => m.round >= round).length + 1)));
+            if (remainingContestants === 2) return 'Finals';
+            if (remainingContestants === 4) return 'Semifinals';
+            if (remainingContestants === 8) return 'Quarterfinals';
+            return `Round ${round}`;
+          };
+
+          const getProgress = () => {
+            const completedMatches = allMatches.filter(m => m.winner !== null).length;
+            return `${completedMatches} / ${allMatches.length} battles complete`;
+          };
+
+          if (winner) {
+            return (
+              <div className="min-h-screen bg-gradient-to-br from-purple-900 via-red-900 to-black p-8 flex items-center justify-center">
+                <div className="max-w-3xl mx-auto text-center">
+                  <Trophy className="w-32 h-32 mx-auto text-yellow-400 mb-6 animate-bounce" />
+                  <h1 className="text-6xl font-bold text-yellow-400 mb-6">Supreme Insult Champion!</h1>
+                  <div className="bg-black bg-opacity-70 p-10 rounded-lg border-4 border-yellow-400 mb-8">
+                    <p className="text-4xl text-white italic mb-6">"{winner.text}"</p>
+                    <p className="text-2xl text-gray-300">— {winner.play}</p>
+                  </div>
+                  <button
+                    onClick={initializeTournament}
+                    className="bg-yellow-400 text-black px-10 py-4 rounded-lg font-bold text-2xl hover:bg-yellow-300 transition transform hover:scale-105"
+                  >
+                    Start New Tournament
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          if (allMatches.length === 0 || currentMatchIndex >= allMatches.length) {
+            return (
+              <div className="min-h-screen bg-gradient-to-br from-purple-900 via-red-900 to-black flex items-center justify-center">
+                <div className="text-white text-2xl">Loading tournament...</div>
+              </div>
+            );
+          }
+
+          const currentMatch = allMatches[currentMatchIndex];
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-purple-900 via-red-900 to-black p-8 flex items-center justify-center">
+              <div className="max-w-4xl w-full">
+                <div className="text-center mb-8">
+                  <h1 className="text-5xl font-bold text-yellow-400 mb-3 flex items-center justify-center gap-3">
+                    <Swords className="w-12 h-12" />
+                    Shakespearean Insult Battle
+                    <Swords className="w-12 h-12" />
+                  </h1>
+                  <p className="text-2xl text-gray-300 mb-2">{getRoundName(currentMatch.round, allMatches)}</p>
+                  <p className="text-lg text-gray-400">{getProgress()}</p>
+                </div>
+
+                <div className="bg-black bg-opacity-50 p-10 rounded-lg border-4 border-yellow-600">
+                  <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8">
+                    Choose the Superior Insult
+                  </h2>
+                  
+                  <div className="space-y-6">
+                    {currentMatch.contestants.map((insult) => (
+                      <button
+                        key={insult.id}
+                        onClick={() => selectWinner(insult)}
+                        className="w-full p-8 rounded-lg bg-red-900 border-4 border-red-600 hover:bg-red-800 hover:border-red-400 transition transform hover:scale-105 active:scale-95"
+                      >
+                        <p className="text-white text-2xl italic mb-4">"{insult.text}"</p>
+                        <p className="text-gray-300 text-lg">— {insult.play}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-8 text-center">
+                  <button
+                    onClick={initializeTournament}
+                    className="bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition text-lg"
+                  >
+                    Reset Tournament
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<InsultBracket />);
+    </script>
+</body>
+</html>
